@@ -1,0 +1,27 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "cacheDirectory": ".nx/cache",
+  "tasksRunnerOptions": {
+    "default": {
+      "runner": "nx/tasks-runners/default",
+      "options": {
+        "cacheableOperations": []
+      }
+    }
+  },
+  "targetDefaults": {
+    "build": {
+      "cache": false
+    },
+    "test": {
+      "cache": false
+    },
+    "test:e2e": {
+      "cache": false
+    },
+    "lint": {
+      "cache": false
+    }
+  }
+}
+
