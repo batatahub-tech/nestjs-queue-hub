@@ -19,7 +19,7 @@ import { OciQueueWorkerAdapter } from './oci-queue-worker.adapter';
 import { OciQueueAdapter } from './oci-queue.adapter';
 
 export interface OciQueueConfig {
-  provider: common.ConfigFileAuthenticationDetailsProvider;
+  provider: common.AuthenticationDetailsProvider;
   compartmentId: string;
   queueId: string;
   region?: string;

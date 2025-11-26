@@ -14,28 +14,44 @@ export interface QueueHubModuleExtraOptions {
 
 /**
  * OCI Queue Configuration
+ * Used in root module for authentication settings
  * @publicApi
  */
 export interface OciQueueConnectionConfig {
   /**
    * OCI Config profile name (defaults to 'DEFAULT')
    * If not provided, will use ConfigFileAuthenticationDetailsProvider with default values
+   * Ignored if token authentication is used
    */
   profile?: string;
   /**
    * Optional: Custom authentication provider
    * If not provided, will create ConfigFileAuthenticationDetailsProvider automatically
+   * or SimpleAuthenticationDetailsProvider if token credentials are provided
    */
-  provider?: common.ConfigFileAuthenticationDetailsProvider;
+  provider?: common.AuthenticationDetailsProvider;
+  /**
+   * Token-based authentication credentials
+   * If provided, will use SimpleAuthenticationDetailsProvider instead of config file
+   */
+  tokenAuth?: {
+    tenancyId: string;
+    userId: string;
+    fingerprint: string;
+    privateKey: string;
+    passphrase?: string;
+  };
   /**
    * Compartment OCID (optional)
    * If not provided, will try to get from environment variable OCI_COMPARTMENT_ID
    * or from the tenancy OCID if available
    */
   compartmentId?: string;
-  queueId: string;
+  /**
+   * Region (optional)
+   * Can be overridden per queue
+   */
   region?: string;
-  endpoint?: string;
 }
 
 /**

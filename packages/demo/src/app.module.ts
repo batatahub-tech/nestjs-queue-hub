@@ -13,9 +13,21 @@ import { NotificationModule } from './notification/notification.module';
       envFilePath: '.env',
     }),
     QueueHubModule.forRootAsync({
-      useFactory: () => ({
+      useFactory: (configService: ConfigService) => ({
         driver: QueueHubDriver.OCI_QUEUE,
+        connection: {
+          profile: configService.get<string>('OCI_CONFIG_PROFILE', 'DEFAULT'),
+          compartmentId: configService.get<string>('OCI_COMPARTMENT_ID'),
+          // Or use tokenAuth instead of profile:
+          // tokenAuth: {
+          //   tenancyId: configService.get<string>('OCI_TENANCY_ID'),
+          //   userId: configService.get<string>('OCI_USER_ID'),
+          //   fingerprint: configService.get<string>('OCI_FINGERPRINT'),
+          //   privateKey: configService.get<string>('OCI_PRIVATE_KEY'),
+          // },
+        },
       }),
+      inject: [ConfigService],
     }),
     AudioModule,
     NotificationModule,

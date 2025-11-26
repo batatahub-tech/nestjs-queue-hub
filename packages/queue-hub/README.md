@@ -12,20 +12,33 @@ npm install --save @batatahub.com/nestjs-queue-hub oci-queue oci-common
 
 ### 1. Configure the Module
 
-First, configure the module in your root module (`app.module.ts`) specifying which driver to use:
+First, configure the module in your root module (`app.module.ts`) specifying which driver to use and authentication settings:
 
 ```typescript
 import { QueueHubDriver, QueueHubModule } from '@batatahub.com/nestjs-queue-hub';
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     QueueHubModule.forRootAsync({
-      useFactory: () => ({
+      useFactory: (configService: ConfigService) => ({
         driver: QueueHubDriver.OCI_QUEUE, // Specify your driver
+        connection: {
+          profile: configService.get<string>('OCI_CONFIG_PROFILE', 'DEFAULT'),
+          compartmentId: configService.get<string>('OCI_COMPARTMENT_ID'),
+          // Or use tokenAuth instead of profile:
+          // tokenAuth: {
+          //   tenancyId: configService.get<string>('OCI_TENANCY_ID'),
+          //   userId: configService.get<string>('OCI_USER_ID'),
+          //   fingerprint: configService.get<string>('OCI_FINGERPRINT'),
+          //   privateKey: configService.get<string>('OCI_PRIVATE_KEY'),
+          //   passphrase: configService.get<string>('OCI_PRIVATE_KEY_PASSPHRASE'),
+          // },
+        },
       }),
+      inject: [ConfigService],
     }),
   ],
 })
@@ -34,7 +47,7 @@ export class AppModule {}
 
 ### 2. Register a Queue
 
-Register a queue in your feature module:
+Register a queue in your feature module. You only need to provide `queueId` and `endpoint` - authentication comes from the root module:
 
 ```typescript
 import { QueueHubModule } from '@batatahub.com/nestjs-queue-hub';
@@ -46,11 +59,8 @@ import { ConfigService } from '@nestjs/config';
     QueueHubModule.registerQueueAsync({
       name: 'audio',
       useFactory: (configService: ConfigService) => ({
-        connection: {
-          queueId: configService.get<string>('OCI_QUEUE_ID'),
-          endpoint: configService.get<string>('OCI_QUEUE_URL'),
-          profile: configService.get<string>('OCI_CONFIG_PROFILE', 'DEFAULT'),
-        },
+        queueId: configService.get<string>('OCI_QUEUE_ID'),
+        endpoint: configService.get<string>('OCI_QUEUE_URL'),
       }),
       inject: [ConfigService],
     }),
@@ -150,18 +160,83 @@ More drivers coming soon (SQS, MongoDB, RabbitMQ, Redis, etc.)
 
 ## Configuration Options
 
-### OCI Queue Connection
+### Root Module Configuration (`forRootAsync`)
+
+The root module configuration handles authentication and driver selection. All queues will use these settings.
+
+#### Using Config File (Default)
 
 ```typescript
-{
-  connection: {
-    queueId: string;           // Required: OCI Queue OCID
-    endpoint: string;           // Required: Queue endpoint URL
-    profile?: string;           // Optional: OCI config profile (default: 'DEFAULT')
-    compartmentId?: string;    // Optional: Compartment OCID
-    region?: string;           // Optional: OCI region
-  }
+QueueHubModule.forRootAsync({
+  useFactory: (configService: ConfigService) => ({
+    driver: QueueHubDriver.OCI_QUEUE,
+    connection: {
+      profile: configService.get<string>('OCI_CONFIG_PROFILE', 'DEFAULT'),
+      compartmentId: configService.get<string>('OCI_COMPARTMENT_ID'),
+      region: configService.get<string>('OCI_REGION'),
+    },
+  }),
+  inject: [ConfigService],
+})
+```
+
+#### Using Token Authentication
+
+Instead of using the config file, you can provide credentials directly:
+
+```typescript
+import * as fs from 'fs';
+
+QueueHubModule.forRootAsync({
+  useFactory: (configService: ConfigService) => ({
+    driver: QueueHubDriver.OCI_QUEUE,
+    connection: {
+      compartmentId: configService.get<string>('OCI_COMPARTMENT_ID'),
+      tokenAuth: {
+        tenancyId: configService.get<string>('OCI_TENANCY_ID'),
+        userId: configService.get<string>('OCI_USER_ID'),
+        fingerprint: configService.get<string>('OCI_FINGERPRINT'),
+        privateKey: fs.readFileSync(
+          configService.get<string>('OCI_PRIVATE_KEY_PATH'),
+          'utf8'
+        ),
+        passphrase: configService.get<string>('OCI_PRIVATE_KEY_PASSPHRASE'), // Optional
+      },
+    },
+  }),
+  inject: [ConfigService],
+})
+```
+
+Or read the private key from an environment variable:
+
+```typescript
+connection: {
+  tokenAuth: {
+    tenancyId: process.env.OCI_TENANCY_ID,
+    userId: process.env.OCI_USER_ID,
+    fingerprint: process.env.OCI_FINGERPRINT,
+    privateKey: process.env.OCI_PRIVATE_KEY, // Base64 encoded or PEM format
+    passphrase: process.env.OCI_PRIVATE_KEY_PASSPHRASE, // Optional
+  },
 }
+```
+
+### Queue Registration (`registerQueueAsync`)
+
+When registering a queue, you only need to provide the queue-specific information:
+
+```typescript
+QueueHubModule.registerQueueAsync({
+  name: 'audio',
+  useFactory: (configService: ConfigService) => ({
+    queueId: configService.get<string>('OCI_QUEUE_ID'),  // Required
+    endpoint: configService.get<string>('OCI_QUEUE_URL'), // Required
+    compartmentId: configService.get<string>('OCI_COMPARTMENT_ID'), // Optional: overrides root config
+    region: configService.get<string>('OCI_REGION'), // Optional: overrides root config
+  }),
+  inject: [ConfigService],
+})
 ```
 
 ### Log Level

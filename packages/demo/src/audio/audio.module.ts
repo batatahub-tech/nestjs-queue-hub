@@ -10,13 +10,11 @@ import { AudioService } from './audio.service';
     QueueHubModule.registerQueueAsync({
       name: 'audio',
       useFactory: (configService: ConfigService) => ({
-        connection: {
-          queueId: configService.get<string>(
-            'OCI_PROVIDERS_WEBHOOK_QUEUE_ID',
-            'ocid1.queue.oc1..example',
-          ),
-          endpoint: configService.get<string>('OCI_PROVIDERS_WEBHOOK_QUEUE_URL'),
-        },
+        queueId: configService.get<string>(
+          'OCI_PROVIDERS_WEBHOOK_QUEUE_ID',
+          'ocid1.queue.oc1..example',
+        ),
+        endpoint: configService.get<string>('OCI_PROVIDERS_WEBHOOK_QUEUE_URL'),
       }),
       inject: [ConfigService],
     }),

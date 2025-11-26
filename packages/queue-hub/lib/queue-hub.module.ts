@@ -216,7 +216,9 @@ export class QueueHubModule {
       ];
     }
     if (!options.useClass) {
-      return createQueueOptionProviders([options]);
+      throw new Error(
+        'registerQueueAsync requires either useFactory, useExisting, or useClass to be provided',
+      );
     }
     const useClass = options.useClass;
     return [

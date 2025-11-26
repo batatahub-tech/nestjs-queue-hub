@@ -57,13 +57,23 @@ class FixedSessionTokenProvider extends common.ConfigFileAuthenticationDetailsPr
 
 /**
  * Creates an OCI authentication provider from connection config
- * Uses FixedSessionTokenProvider to fix keyId format when session token exists
+ * Supports both config file and token-based authentication
  */
 function createAuthenticationProvider(
   config: OciQueueConnectionConfig,
-): common.ConfigFileAuthenticationDetailsProvider {
+): common.AuthenticationDetailsProvider {
   if (config.provider) {
     return config.provider;
+  }
+
+  if (config.tokenAuth) {
+    return new common.SimpleAuthenticationDetailsProvider(
+      config.tokenAuth.tenancyId,
+      config.tokenAuth.userId,
+      config.tokenAuth.fingerprint,
+      config.tokenAuth.privateKey,
+      config.tokenAuth.passphrase,
+    );
   }
 
   const configFile = process.env.OCI_CONFIG_FILE || undefined;
@@ -75,24 +85,48 @@ function createAuthenticationProvider(
 
 function createQueueAndWorkers(
   options: RegisterQueueOptions,
+  sharedConfig: QueueHubRootModuleOptions | undefined,
   driver: QueueHubDriver = QueueHubDriver.OCI_QUEUE,
 ): QueueHubQueue {
   const queueName = options.name ?? 'default';
   const factory = QueueFactoryRegistry.getFactory(driver);
 
-  if (!options.connection) {
-    throw new Error(`Connection configuration is required for driver "${driver}"`);
-  }
-
   if (driver === QueueHubDriver.OCI_QUEUE) {
-    const provider = createAuthenticationProvider(options.connection);
-    const compartmentId =
-      options.connection.compartmentId || process.env.OCI_COMPARTMENT_ID || provider.getTenantId();
+    if (!options.queueId) {
+      throw new Error(`queueId is required for driver "${driver}"`);
+    }
+    if (!options.endpoint) {
+      throw new Error(`endpoint is required for driver "${driver}"`);
+    }
+
+    const rootConnection = sharedConfig?.connection;
+
+    if (!rootConnection) {
+      throw new Error(
+        `Connection configuration is required in root module (QueueHubModule.forRootAsync) for driver "${driver}". Provide authentication credentials (tokenAuth or profile) in the root module configuration.`,
+      );
+    }
+
+    const provider = createAuthenticationProvider(rootConnection);
+    let compartmentId =
+      options.compartmentId || rootConnection.compartmentId || process.env.OCI_COMPARTMENT_ID;
+
+    if (!compartmentId && 'getTenantId' in provider && typeof provider.getTenantId === 'function') {
+      compartmentId = provider.getTenantId();
+    }
+
+    if (!compartmentId) {
+      throw new Error(
+        'compartmentId is required. Provide it in root module connection config, queue options, or set OCI_COMPARTMENT_ID environment variable.',
+      );
+    }
 
     const queueConfig = {
-      ...options.connection,
-      provider,
+      queueId: options.queueId,
+      endpoint: options.endpoint,
+      region: options.region || rootConnection.region,
       compartmentId,
+      provider,
     };
 
     const queue = factory.createQueue(queueName, queueConfig);
@@ -205,6 +239,7 @@ export function createQueueProviders(options: RegisterQueueOptions[]): Provider[
               ...queueOptions,
               name: queueName,
             },
+            sharedConfig,
             driver,
           );
         },

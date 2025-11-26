@@ -1,12 +1,30 @@
 import { FactoryProvider, ModuleMetadata, Provider, Type } from '@nestjs/common';
 import { QueueHubQueueProcessor } from '../queue-hub.types';
-import { OciQueueConnectionConfig } from './shared-queue-hub-config.interface';
 
 /**
  * @publicApi
  */
 export interface RegisterQueueOptions {
-  connection?: OciQueueConnectionConfig;
+  /**
+   * Queue ID (OCID for OCI Queue)
+   * Required for OCI Queue driver
+   */
+  queueId: string;
+  /**
+   * Queue endpoint URL
+   * Required for OCI Queue driver
+   */
+  endpoint: string;
+  /**
+   * Optional: Override compartment ID
+   * If not provided, will use from root module config or environment variable
+   */
+  compartmentId?: string;
+  /**
+   * Optional: Override region
+   * If not provided, will use from root module config
+   */
+  region?: string;
   /**
    * Queue name
    *
