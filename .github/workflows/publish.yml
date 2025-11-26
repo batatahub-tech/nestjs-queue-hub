@@ -40,7 +40,7 @@ jobs:
   publish-npm:
     runs-on: ubuntu-24.04
     needs: test
-    timeout-minutes: 10
+    timeout-minutes: 5
     permissions:
       contents: read
       id-token: write
@@ -77,10 +77,8 @@ jobs:
       - name: Build
         run: npm run build
 
-      # - name: Run Tests
-      #   run: npm test
-
       - name: 🐙 Publish
-        run: npx lerna publish from-package --yes
+        run: npx lerna publish from-package --yes --no-git-reset --no-push
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NX_DAEMON: false
