@@ -3,6 +3,7 @@ name: 🚀 Publish
 on:
   release:
     types: [created]
+  workflow_dispatch:
 
 jobs:
   test:
@@ -80,6 +81,6 @@ jobs:
       #   run: npm test
 
       - name: 🐙 Publish
-        run: npx lerna publish from-git --yes
+        run: npx lerna publish from-package --yes
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
