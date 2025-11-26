@@ -1,6 +1,6 @@
-import type { Config } from '@jest/types';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import type { Config } from '@jest/types';
 import { pathsToModuleNameMapper } from 'ts-jest';
 
 const tsconfigSpecPath = join(process.cwd(), 'tsconfig.spec.json');

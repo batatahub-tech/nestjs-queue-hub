@@ -124,7 +124,7 @@ export class QueueHubExplorer implements OnApplicationShutdown {
   handleProcessor<T extends WorkerHost>(
     instance: T,
     queueName: string,
-    queueOpts: NestQueueOptions,
+    _queueOpts: NestQueueOptions,
     moduleRef: Module,
     isRequestScoped: boolean,
     options: NestWorkerOptions = {},
