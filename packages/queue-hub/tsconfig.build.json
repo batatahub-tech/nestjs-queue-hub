@@ -1,0 +1,16 @@
+{
+  "extends": "../tsconfig.build.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./lib",
+    "paths": {
+      "@batatahub.com/nestjs-queue-hub-shared": ["../queue-hub-shared/lib"]
+    }
+  },
+  "references": [
+    {
+      "path": "../queue-hub-shared/tsconfig.build.json"
+    }
+  ],
+  "exclude": ["node_modules", "dist", "e2e/**/*", "**/*.spec.ts", "jest.config.ts"]
+}

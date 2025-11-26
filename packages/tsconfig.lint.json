@@ -1,0 +1,11 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "./queue-hub/tsconfig.json"
+    },
+    {
+      "path": "./queue-hub-shared/tsconfig.json"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "name": "@batatahub.com/nestjs-queue-hub-shared",
+  "version": "1.0.0",
+  "description": "Shared utilities for queue-hub (@queue-hub-shared)",
+  "homepage": "https://github.com/batatahub-tech/nestjs-queue-hub",
+  "bugs": {
+    "url": "https://github.com/batatahub-tech/nestjs-queue-hub/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/batatahub-tech/nestjs-queue-hub.git"
+  },
+  "license": "MIT",
+  "author": "BatataHub",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {},
+  "dependencies": {
+    "tslib": "2.8.1"
+  },
+  "devDependencies": {
+    "@nestjs/common": "11.1.9",
+    "@nestjs/core": "11.1.9"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^10.0.0 || ^11.0.0",
+    "@nestjs/core": "^10.0.0 || ^11.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

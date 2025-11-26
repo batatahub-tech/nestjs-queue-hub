@@ -1,0 +1,18 @@
+{
+  "packages": ["packages/*"],
+  "command": {
+    "version": {
+      "message": "chore(release): publish new releases"
+    }
+  },
+  "version": "independent",
+  "npmClient": "npm",
+  "changelog": {
+    "labels": {
+      "feature": "Features",
+      "bug": "Bug fixes",
+      "enhancement": "Enhancements",
+      "dependencies": "Dependencies"
+    }
+  }
+}

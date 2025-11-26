@@ -1,0 +1,66 @@
+{
+  "name": "@batatahub.com/nestjs-queue-hub-workspace",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Queue Hub monorepo supporting multiple backends (Redis, OCI Queue, SQS, MongoDB, RabbitMQ, etc.)",
+  "homepage": "https://github.com/batatahub-tech/nestjs-queue-hub",
+  "bugs": {
+    "url": "https://github.com/batatahub-tech/nestjs-queue-hub/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/batatahub-tech/nestjs-queue-hub.git"
+  },
+  "license": "MIT",
+  "author": "BatataHub",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "tsc -b -v packages",
+    "changelog": "lerna-changelog",
+    "clean": "tsc -b --clean packages",
+    "commitlint": "commitlint -c .commitlintrc.json -E HUSKY_GIT_PARAMS",
+    "format": "biome format --write packages",
+    "lint": "biome lint packages",
+    "lint:fix": "biome lint --write packages",
+    "check": "biome check packages",
+    "check:fix": "biome check --write packages",
+    "prepare": "husky",
+    "prepublish:next": "npm run build",
+    "prepublish:npm": "npm run build",
+    "publish:next": "lerna publish --dist-tag next",
+    "publish:npm": "lerna publish",
+    "postpublish:npm": "npm run changelog | pbcopy",
+    "test": "lerna run test --parallel",
+    "test:dev": "lerna run test:dev --parallel",
+    "test:e2e": "lerna run test:e2e --stream",
+    "test:e2e:dev": "lerna run test:e2e:dev --stream"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "biome format --write",
+      "biome lint --write"
+    ],
+    "package.json": [
+      "sort-package-json"
+    ]
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@commitlint/cli": "20.1.0",
+    "@commitlint/config-angular": "20.0.0",
+    "@commitlint/config-conventional": "20.0.0",
+    "husky": "9.1.7",
+    "jest": "30.2.0",
+    "lerna": "8.2.4",
+    "lerna-changelog": "2.2.0",
+    "lint-staged": "16.2.7",
+    "rimraf": "6.1.2",
+    "sort-package-json": "3.4.0",
+    "ts-jest": "29.4.5",
+    "ts-node": "10.9.2",
+    "tsconfig-paths": "4.2.0",
+    "typescript": "5.9.3"
+  }
+}

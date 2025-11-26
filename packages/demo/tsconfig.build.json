@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"],
+  "compilerOptions": {
+    "outDir": "./dist",
+    "paths": {
+      "@batatahub.com/nestjs-queue-hub": ["../queue-hub/dist"],
+      "@batatahub.com/nestjs-queue-hub-shared": ["../queue-hub-shared/dist"]
+    }
+  },
+  "include": ["src/**/*"]
+}

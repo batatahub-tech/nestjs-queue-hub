@@ -1,0 +1,43 @@
+{
+  "name": "@batatahub.com/nestjs-queue-hub",
+  "version": "1.0.0",
+  "description": "Nest - modern, fast, powerful node.js web framework. Queue Hub supporting multiple drivers (Redis, OCI Queue, SQS, MongoDB, RabbitMQ, etc.)",
+  "homepage": "https://github.com/batatahub-tech/nestjs-queue-hub",
+  "bugs": {
+    "url": "https://github.com/batatahub-tech/nestjs-queue-hub/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/batatahub-tech/nestjs-queue-hub.git"
+  },
+  "license": "MIT",
+  "author": "BatataHub",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "test": "jest --detectOpenHandles --passWithNoTests",
+    "test:e2e": "jest --config=e2e/jest-e2e.config.ts --detectOpenHandles --runInBand --forceExit --passWithNoTests"
+  },
+  "dependencies": {
+    "@batatahub.com/nestjs-queue-hub-shared": "^1.0.0",
+    "tslib": "2.8.1"
+  },
+  "devDependencies": {
+    "@nestjs/common": "11.1.9",
+    "@nestjs/core": "11.1.9",
+    "@nestjs/platform-express": "11.1.9",
+    "@nestjs/testing": "11.1.9",
+    "@types/jest": "30.0.0",
+    "@types/node": "24.10.1",
+    "@types/reflect-metadata": "0.1.0",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^10.0.0 || ^11.0.0",
+    "@nestjs/core": "^10.0.0 || ^11.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

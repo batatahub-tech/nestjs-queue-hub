@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist/tests",
+    "types": ["jest", "node"],
+    "rootDir": ".",
+    "resolveJsonModule": true,
+    "paths": {
+      "@batatahub.com/nestjs-queue-hub-shared": ["../queue-hub-shared/lib"]
+    }
+  },
+  "include": ["lib", "e2e"],
+  "exclude": ["node_modules", "dist", "jest.config.ts"]
+}
