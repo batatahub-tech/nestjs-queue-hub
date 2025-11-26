@@ -32,10 +32,10 @@
     "publish:next": "lerna publish --dist-tag next",
     "publish:npm": "lerna publish",
     "postpublish:npm": "npm run changelog | pbcopy",
-    "test": "lerna run test --parallel",
-    "test:dev": "lerna run test:dev --parallel",
-    "test:e2e": "lerna run test:e2e --stream",
-    "test:e2e:dev": "lerna run test:e2e:dev --stream"
+    "test": "lerna run test --parallel --no-daemon",
+    "test:dev": "lerna run test:dev --parallel --no-daemon",
+    "test:e2e": "lerna run test:e2e --stream --no-daemon",
+    "test:e2e:dev": "lerna run test:e2e:dev --stream --no-daemon"
   },
   "lint-staged": {
     "*.ts": [
