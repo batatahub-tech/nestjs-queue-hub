@@ -1,49 +1,22 @@
 import { QueueClient, models } from 'oci-queue';
 import { JobOpts } from '../../interfaces/queue-hub-job-opts.interface';
-import { QueueHubJob } from '../../interfaces/queue-hub-job.interface';
-import { QueueHubLogger } from '../../utils/logger';
+import { BaseJobAdapter, StoredJobOpts } from '../base/base-job.adapter';
 
-interface StoredJobOpts {
-  jobName: string;
-  priority: number;
-  attempts?: number;
-  maxAttempts?: number;
-  delay?: number;
-  processAfter: number;
-  timeout?: number;
-  jobId?: number | string;
-  removeOnComplete?: boolean | number;
-  removeOnFail?: boolean | number;
-  lifo?: boolean;
-  stackTraceLimit?: number;
-  repeat?: any;
-  backoff?: number | any;
-  createdAt: number;
-  currentAttempt?: number;
-}
-
-/**
- * Adapter for OCI Queue Job implementing QueueHubJob interface
- */
-export class OciQueueJobAdapter<T = any, R = any> implements QueueHubJob<T, R> {
-  private readonly logger: QueueHubLogger;
-  private _jobOpts: StoredJobOpts | null = null;
-
+export class OciQueueJobAdapter<T = any, R = any> extends BaseJobAdapter<T, R> {
   constructor(
     private readonly message: models.GetMessage,
     private readonly queueClient: QueueClient,
     private readonly queueId: string,
   ) {
-    this.logger = new QueueHubLogger('OciQueueJobAdapter');
-    this._parseJobOpts();
+    super();
+    this.parseJobOpts();
   }
 
-  private _parseJobOpts(): void {
+  protected parseJobOpts(): void {
     try {
       const jobOptsStr = (this.message.metadata as any)?._jobOpts;
       if (jobOptsStr) {
         this._jobOpts = JSON.parse(jobOptsStr) as StoredJobOpts;
-        // Initialize currentAttempt if not set
         if (this._jobOpts && this._jobOpts.currentAttempt === undefined) {
           this._jobOpts.currentAttempt = 1;
         }
@@ -146,7 +119,6 @@ export class OciQueueJobAdapter<T = any, R = any> implements QueueHubJob<T, R> {
   }
 
   async retry(): Promise<void> {
-    // Retry logic is handled by the worker
     this.incrementAttempt();
   }
 
@@ -155,16 +127,14 @@ export class OciQueueJobAdapter<T = any, R = any> implements QueueHubJob<T, R> {
   }
 
   async moveToCompleted(returnValue: R, _token?: string): Promise<any> {
-    const shouldRemove = this._jobOpts?.removeOnComplete;
-    if (shouldRemove === true || (typeof shouldRemove === 'number' && shouldRemove > 0)) {
+    if (this.shouldRemoveOnComplete()) {
       await this.remove();
     }
     return returnValue;
   }
 
   async moveToFailed(_error: Error, _token?: string): Promise<void> {
-    const shouldRemove = this._jobOpts?.removeOnFail;
-    if (shouldRemove === true || (typeof shouldRemove === 'number' && shouldRemove > 0)) {
+    if (this.shouldRemoveOnFail()) {
       await this.remove();
     }
   }

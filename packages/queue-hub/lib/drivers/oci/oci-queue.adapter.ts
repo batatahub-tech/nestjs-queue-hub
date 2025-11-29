@@ -1,66 +1,64 @@
 import { QueueClient, models } from 'oci-queue';
 import { JobOpts } from '../../interfaces/queue-hub-job-opts.interface';
 import { QueueHubJob } from '../../interfaces/queue-hub-job.interface';
-import { QueueHubQueue } from '../../interfaces/queue-hub-queue.interface';
-import { QueueHubLogger } from '../../utils/logger';
+import { BaseQueueAdapter } from '../base/base-queue.adapter';
 import { OciQueueJobAdapter } from './oci-queue-job.adapter';
 
-/**
- * Adapter for OCI Queue implementing QueueHubQueue interface
- */
-export class OciQueueAdapter<T = any, R = any> implements QueueHubQueue<T, R> {
-  private readonly logger: QueueHubLogger;
-  private readonly defaultJobOptions?: JobOpts;
-
+export class OciQueueAdapter<T = any, R = any> extends BaseQueueAdapter<T, R> {
   constructor(
     public readonly name: string,
     private readonly queueClient: QueueClient,
     private readonly queueId: string,
     defaultJobOptions?: JobOpts,
   ) {
-    this.logger = new QueueHubLogger(`OciQueueAdapter:${name}`);
-    this.defaultJobOptions = defaultJobOptions;
+    super(name, defaultJobOptions);
+  }
+
+  protected serializeJobOpts(name: string, opts: JobOpts, processAfter: number): any {
+    const createdAt = Date.now();
+    return {
+      channelId: 'default',
+      _jobOpts: JSON.stringify({
+        jobName: name,
+        priority: opts.priority ?? 0,
+        attempts: opts.attempts,
+        maxAttempts: opts.attempts,
+        delay: opts.delay,
+        processAfter,
+        timeout: opts.timeout,
+        jobId: opts.jobId,
+        removeOnComplete: opts.removeOnComplete,
+        removeOnFail: opts.removeOnFail,
+        lifo: opts.lifo,
+        stackTraceLimit: opts.stackTraceLimit,
+        repeat: opts.repeat,
+        backoff: opts.backoff,
+        createdAt,
+        currentAttempt: (opts as any)._currentAttempt || 1,
+      }),
+    };
+  }
+
+  protected deserializeJobOpts(stored: any): any | null {
+    try {
+      const jobOptsStr = stored?._jobOpts;
+      if (jobOptsStr) {
+        return JSON.parse(jobOptsStr);
+      }
+    } catch (error) {
+      this.logger.warn('Failed to deserialize job options', error);
+    }
+    return null;
   }
 
   async add(name: string, data: T, opts?: JobOpts): Promise<QueueHubJob<T, R>> {
-    // Merge default job options with provided options
-    const mergedOpts: JobOpts = {
-      ...this.defaultJobOptions,
-      ...opts,
-    };
-
+    const mergedOpts = this.mergeJobOptions(opts);
     const contentString = JSON.stringify(data);
     const contentBase64 = Buffer.from(contentString).toString('base64');
-
-    const now = Date.now();
+    const processAfter = this.calculateProcessAfter(mergedOpts.delay);
     const delayMs = mergedOpts.delay || 0;
-    const processAfter = delayMs > 0 ? now + delayMs : now;
-
-    // Store all JobOpts in metadata for reference
-    // OCI Queue requires channelId in metadata
-    const metadata: any = {
-      channelId: 'default', // Required by OCI Queue MessageMetadata
-      // Store job options in metadata for worker to use
-      _jobOpts: JSON.stringify({
-        jobName: name,
-        priority: mergedOpts.priority ?? 0,
-        attempts: mergedOpts.attempts,
-        maxAttempts: mergedOpts.attempts,
-        delay: mergedOpts.delay,
-        processAfter, // Timestamp when job should be processed
-        timeout: mergedOpts.timeout,
-        jobId: mergedOpts.jobId,
-        removeOnComplete: mergedOpts.removeOnComplete,
-        removeOnFail: mergedOpts.removeOnFail,
-        lifo: mergedOpts.lifo,
-        stackTraceLimit: mergedOpts.stackTraceLimit,
-        repeat: mergedOpts.repeat,
-        backoff: mergedOpts.backoff,
-        createdAt: now,
-        // Preserve current attempt if this is a retry
-        currentAttempt: (mergedOpts as any)._currentAttempt || 1,
-      }),
-    };
+    const now = Date.now();
+    const metadata = this.serializeJobOpts(name, mergedOpts, processAfter);
 
     const putMessagesDetails: models.PutMessagesDetails = {
       messages: [
