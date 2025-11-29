@@ -55,24 +55,22 @@ export class OciQueueWorkerAdapter extends BaseWorkerAdapter {
     ociJob.incrementAttempt();
     const nextAttempt = ociJob.getCurrentAttempt();
 
-    if (backoffDelay > 0) {
-      this.logger.debug(
-        `Scheduling retry for job ${job.id} (attempt ${nextAttempt}/${maxAttempts}) with backoff delay of ${backoffDelay}ms`,
-      );
+    this.logger.debug(
+      `Scheduling retry for job ${job.id} (attempt ${nextAttempt}/${maxAttempts})${backoffDelay > 0 ? ` with backoff delay of ${backoffDelay}ms` : ''}`,
+    );
 
-      await ociJob.remove();
+    await ociJob.remove();
 
-      const retryOpts: any = {
-        ...ociJob.opts,
-        delay: backoffDelay,
-        attempts: maxAttempts,
-      };
+    const retryOpts: any = {
+      ...ociJob.opts,
+      delay: backoffDelay,
+      attempts: maxAttempts,
+    };
 
-      (retryOpts as any)._currentAttempt = nextAttempt;
+    (retryOpts as any)._currentAttempt = nextAttempt;
 
-      await this.queue.add(ociJob.name, ociJob.data, retryOpts);
-      this.logger.debug(`Job ${ociJob.name} re-queued with ${backoffDelay}ms delay for retry (attempt ${nextAttempt})`);
-    }
+    await this.queue.add(ociJob.name, ociJob.data, retryOpts);
+    this.logger.debug(`Job ${ociJob.name} re-queued${backoffDelay > 0 ? ` with ${backoffDelay}ms delay` : ''} for retry (attempt ${nextAttempt})`);
   }
 
   protected async handleJobCompletion(job: QueueHubJob, result: any): Promise<void> {

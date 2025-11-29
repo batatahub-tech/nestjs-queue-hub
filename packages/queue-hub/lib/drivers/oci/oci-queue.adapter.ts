@@ -82,11 +82,12 @@ export class OciQueueAdapter<T = any, R = any> extends BaseQueueAdapter<T, R> {
     const message: any = {
       id: messageId,
       receipt: response.opcRequestId || '',
-      content: JSON.stringify(data),
+      content: contentBase64,
       deliveryCount: 0,
       visibleAfter: new Date(processAfter),
       expireAfter: new Date(),
       createdAt: new Date(now),
+      metadata,
     };
 
     return new OciQueueJobAdapter<T, R>(message, this.queueClient, this.queueId);
