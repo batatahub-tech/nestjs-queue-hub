@@ -1,12 +1,12 @@
 import { QueueHubJob } from '../../interfaces/queue-hub-job.interface';
 import { BaseWorkerAdapter } from '../base/base-worker.adapter';
-import { OciQueueAdapter } from './oci-queue.adapter';
-import { OciQueueJobAdapter } from './oci-queue-job.adapter';
+import { LocalQueueAdapter } from './local-queue.adapter';
+import { LocalQueueJobAdapter } from './local-queue-job.adapter';
 
-export class OciQueueWorkerAdapter extends BaseWorkerAdapter {
+export class LocalQueueWorkerAdapter extends BaseWorkerAdapter {
   constructor(
     public readonly name: string,
-    queue: OciQueueAdapter,
+    queue: LocalQueueAdapter,
     processor: (job: QueueHubJob) => Promise<any>,
     options?: {
       concurrency?: number;
@@ -49,28 +49,20 @@ export class OciQueueWorkerAdapter extends BaseWorkerAdapter {
     maxAttempts: number | undefined,
     backoff: number | any | undefined,
   ): Promise<void> {
-    const ociJob = job as OciQueueJobAdapter;
+    const localJob = job as LocalQueueJobAdapter;
     const backoffDelay = this.calculateBackoffDelay(backoff, currentAttempt);
 
-    ociJob.incrementAttempt();
-    const nextAttempt = ociJob.getCurrentAttempt();
+    localJob.incrementAttempt();
+    const nextAttempt = localJob.getCurrentAttempt();
 
     this.logger.debug(
       `Scheduling retry for job ${job.id} (attempt ${nextAttempt}/${maxAttempts})${backoffDelay > 0 ? ` with backoff delay of ${backoffDelay}ms` : ''}`,
     );
 
-    await ociJob.remove();
-
-    const retryOpts: any = {
-      ...ociJob.opts,
-      delay: backoffDelay,
-      attempts: maxAttempts,
-    };
-
-    (retryOpts as any)._currentAttempt = nextAttempt;
-
-    await this.queue.add(ociJob.name, ociJob.data, retryOpts);
-    this.logger.debug(`Job ${ociJob.name} re-queued${backoffDelay > 0 ? ` with ${backoffDelay}ms delay` : ''} for retry (attempt ${nextAttempt})`);
+    const jobData = localJob.getJobData();
+    jobData.state = 'delayed';
+    jobData.jobOpts.processAfter = Date.now() + backoffDelay;
+    jobData.jobOpts.currentAttempt = nextAttempt;
   }
 
   protected async handleJobCompletion(job: QueueHubJob, result: any): Promise<void> {
@@ -78,8 +70,8 @@ export class OciQueueWorkerAdapter extends BaseWorkerAdapter {
   }
 
   protected async handleJobFailure(job: QueueHubJob, error: Error): Promise<void> {
-    const ociJob = job as OciQueueJobAdapter;
-    await ociJob.moveToFailed(error);
+    const localJob = job as LocalQueueJobAdapter;
+    await localJob.moveToFailed(error);
   }
 
   async start(): Promise<void> {
@@ -90,7 +82,7 @@ export class OciQueueWorkerAdapter extends BaseWorkerAdapter {
 
     this._isRunning = true;
     const interval = this.options?.pollingInterval || 1000;
-    this.logger.debug(`Worker started, polling every ${interval}ms`);
+    this.logger.debug(`Local worker started, polling every ${interval}ms`);
 
     this.pollingInterval = setInterval(async () => {
       if (this._isPaused) {
@@ -98,14 +90,8 @@ export class OciQueueWorkerAdapter extends BaseWorkerAdapter {
       }
 
       try {
-        this.logger.debug('Polling for messages...');
-        const jobs = await this.queue.getWaiting();
-
-        if (jobs.length > 0) {
-          this.logger.info(`Found ${jobs.length} message(s) to process`);
-        }
-
-        const readyJobs = this.filterReadyJobs(jobs);
+        const allJobs = await this.queue.getJobs();
+        const readyJobs = this.filterReadyJobs(allJobs);
         const sortedJobs = this.sortJobsByPriority(readyJobs);
         const jobsToProcess = sortedJobs.slice(
           0,
@@ -113,21 +99,31 @@ export class OciQueueWorkerAdapter extends BaseWorkerAdapter {
         );
 
         for (const job of jobsToProcess) {
-          const ociJob = job as OciQueueJobAdapter;
-          const jobOpts = ociJob.getJobOpts();
+          const localJob = job as LocalQueueJobAdapter;
+          const jobOpts = localJob.getJobOpts();
+          const jobData = localJob.getJobData();
           const startTime = Date.now();
 
-          if (ociJob.hasExceededMaxAttempts()) {
+          if (localJob.hasExceededMaxAttempts()) {
             this.logger.warn(
               `Job ${job.id} has exceeded max attempts (${jobOpts?.maxAttempts}), marking as failed`,
             );
             const maxAttemptsError = new Error('Max attempts exceeded');
             this.emit('failed', job, maxAttemptsError, 'waiting');
-            await ociJob.moveToFailed(maxAttemptsError);
+            await localJob.moveToFailed(maxAttemptsError);
             continue;
           }
 
-          this.logger.debug(`Starting to process job ${job.id} (attempt ${ociJob.getCurrentAttempt()})`);
+          if (jobData.state === 'delayed' && localJob.shouldProcessNow()) {
+            jobData.state = 'waiting';
+          }
+
+          if (jobData.state !== 'waiting') {
+            continue;
+          }
+
+          jobData.state = 'active';
+          this.logger.debug(`Starting to process job ${job.id} (attempt ${localJob.getCurrentAttempt()})`);
           this.emit('active', job, 'waiting');
 
           try {
@@ -146,13 +142,13 @@ export class OciQueueWorkerAdapter extends BaseWorkerAdapter {
               this.logger.debug(`Job ${job.id} completed successfully (total: ${totalTime}ms)`);
             } catch (deleteError) {
               this.logger.error(
-                'Failed to delete message after successful processing',
+                'Failed to complete job after successful processing',
                 deleteError,
               );
             }
           } catch (error) {
             const processingTime = Date.now() - startTime;
-            const currentAttempt = ociJob.getCurrentAttempt();
+            const currentAttempt = localJob.getCurrentAttempt();
             const maxAttempts = jobOpts?.maxAttempts;
             const errorObj = error as Error;
 
@@ -189,3 +185,4 @@ export class OciQueueWorkerAdapter extends BaseWorkerAdapter {
     }, interval);
   }
 }
+

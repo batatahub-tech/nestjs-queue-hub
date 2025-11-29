@@ -1,15 +1,22 @@
 import { QueueHubModule } from '@batatahub.com/nestjs-queue-hub';
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JobOptsDemoController } from './job-opts-demo.controller';
 import { JobOptsDemoProcessor } from './job-opts-demo.processor';
 import { JobOptsDemoService } from './job-opts-demo.service';
 
 @Module({
   imports: [
-    QueueHubModule.registerQueue({
+    QueueHubModule.registerQueueAsync({
       name: 'job-opts-demo',
-      queueId: process.env.OCI_QUEUE_ID || '',
-      endpoint: process.env.OCI_QUEUE_ENDPOINT || '',
+      useFactory: (configService: ConfigService) => ({
+        queueId: configService.get<string>(
+          'OCI_PROVIDERS_WEBHOOK_QUEUE_ID',
+          'ocid1.queue.oc1..example',
+        ),
+        endpoint: configService.get<string>('OCI_PROVIDERS_WEBHOOK_QUEUE_URL'),
+      }),
+      inject: [ConfigService],
     }),
   ],
   controllers: [JobOptsDemoController],

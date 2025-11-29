@@ -62,6 +62,7 @@ export interface OciQueueConnectionConfig {
  */
 export enum QueueHubDriver {
   OCI_QUEUE = 'oci-queue',
+  LOCAL = 'local',
 }
 
 /**
@@ -91,6 +92,12 @@ export interface QueueHubRootModuleOptions {
    * @default QueueHubDriver.OCI_QUEUE
    */
   driver?: QueueHubDriver;
+  /**
+   * Enable local mode (in-memory queue) for development/testing.
+   * When enabled, queues run in-memory without connecting to external services.
+   * @default false
+   */
+  localMode?: boolean;
   /**
    * Options to configure the connection.
    * See Connections for more information.

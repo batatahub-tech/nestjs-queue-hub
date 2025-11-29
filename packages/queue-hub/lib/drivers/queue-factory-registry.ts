@@ -1,4 +1,5 @@
 import { QueueHubDriver } from '../interfaces/shared-queue-hub-config.interface';
+import { LocalQueueFactory } from './local/local-queue-factory';
 import { OciQueueFactory } from './oci/oci-queue-factory';
 
 export interface QueueFactory {
@@ -13,6 +14,7 @@ export class QueueFactoryRegistry {
 
   static {
     QueueFactoryRegistry.factories.set(QueueHubDriver.OCI_QUEUE, OciQueueFactory);
+    QueueFactoryRegistry.factories.set(QueueHubDriver.LOCAL, LocalQueueFactory);
   }
 
   static getFactory(driver: QueueHubDriver = QueueHubDriver.OCI_QUEUE): QueueFactory {

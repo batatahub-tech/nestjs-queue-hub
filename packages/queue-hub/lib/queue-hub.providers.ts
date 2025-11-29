@@ -89,21 +89,47 @@ function createQueueAndWorkers(
   driver: QueueHubDriver = QueueHubDriver.OCI_QUEUE,
 ): QueueHubQueue {
   const queueName = options.name ?? 'default';
-  const factory = QueueFactoryRegistry.getFactory(driver);
+  const effectiveDriver = sharedConfig?.localMode ? QueueHubDriver.LOCAL : driver;
+  const factory = QueueFactoryRegistry.getFactory(effectiveDriver);
 
-  if (driver === QueueHubDriver.OCI_QUEUE) {
+  if (effectiveDriver === QueueHubDriver.LOCAL) {
+    const queueConfig = {
+      defaultJobOptions: sharedConfig?.defaultJobOptions,
+    };
+
+    const queue = factory.createQueue(queueName, queueConfig);
+
+    if (options.processors) {
+      options.processors.forEach((processor: QueueHubQueueProcessor) => {
+        factory.createWorker(queueName, queue, processor, {
+          concurrency: 1,
+          pollingInterval: 1000,
+        });
+      });
+    }
+
+    (queue as unknown as OnApplicationShutdown).onApplicationShutdown = async function (
+      this: QueueHubQueue,
+    ) {
+      await this.close();
+    };
+
+    return queue;
+  }
+
+  if (effectiveDriver === QueueHubDriver.OCI_QUEUE) {
     if (!options.queueId) {
-      throw new Error(`queueId is required for driver "${driver}"`);
+      throw new Error(`queueId is required for driver "${effectiveDriver}"`);
     }
     if (!options.endpoint) {
-      throw new Error(`endpoint is required for driver "${driver}"`);
+      throw new Error(`endpoint is required for driver "${effectiveDriver}"`);
     }
 
     const rootConnection = sharedConfig?.connection;
 
     if (!rootConnection) {
       throw new Error(
-        `Connection configuration is required in root module (QueueHubModule.forRootAsync) for driver "${driver}". Provide authentication credentials (tokenAuth or profile) in the root module configuration.`,
+        `Connection configuration is required in root module (QueueHubModule.forRootAsync) for driver "${effectiveDriver}". Provide authentication credentials (tokenAuth or profile) in the root module configuration.`,
       );
     }
 

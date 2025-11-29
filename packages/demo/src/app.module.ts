@@ -16,6 +16,7 @@ import { NotificationModule } from './notification/notification.module';
     QueueHubModule.forRootAsync({
       useFactory: (configService: ConfigService) => ({
         driver: QueueHubDriver.OCI_QUEUE,
+        localMode: configService.get<string>('QUEUE_HUB_LOCAL_MODE', 'false') === 'true',
         connection: {
           profile: configService.get<string>('OCI_CONFIG_PROFILE', 'DEFAULT'),
           compartmentId: configService.get<string>('OCI_COMPARTMENT_ID'),

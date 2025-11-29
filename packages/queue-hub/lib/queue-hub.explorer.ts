@@ -142,7 +142,9 @@ export class QueueHubExplorer implements OnApplicationShutdown {
         QUEUE_HUB_CONFIG_DEFAULT_TOKEN,
         { strict: false },
       );
-      driver = sharedConfig?.driver || QueueHubDriver.OCI_QUEUE;
+      driver = sharedConfig?.localMode
+        ? QueueHubDriver.LOCAL
+        : sharedConfig?.driver || QueueHubDriver.OCI_QUEUE;
     } catch {
       // Default config not found, use default driver
     }
