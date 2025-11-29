@@ -1,25 +1,31 @@
 import { JobOpts } from '../../interfaces/queue-hub-job-opts.interface';
 import { BaseJobAdapter, StoredJobOpts } from '../base/base-job.adapter';
 
-interface LocalJobData {
+export interface LocalJobData<T = any, R = any> {
   id: string;
   name: string;
-  data: any;
+  data: T;
   jobOpts: StoredJobOpts;
   state: 'waiting' | 'active' | 'completed' | 'failed' | 'delayed';
-  returnValue?: any;
+  returnValue?: R;
   failedReason?: Error;
   createdAt: number;
   processedAt?: number;
 }
 
 export class LocalQueueJobAdapter<T = any, R = any> extends BaseJobAdapter<T, R> {
-  private jobData: LocalJobData;
+  private jobData: LocalJobData<T, R>;
+  private queueAdapter?: any;
 
-  constructor(jobData: LocalJobData) {
+  constructor(jobData: LocalJobData, queueAdapter?: any) {
     super();
     this.jobData = jobData;
     this._jobOpts = jobData.jobOpts;
+    this.queueAdapter = queueAdapter;
+  }
+
+  setQueueAdapter(queueAdapter: any): void {
+    this.queueAdapter = queueAdapter;
   }
 
   protected parseJobOpts(): void {
@@ -95,7 +101,11 @@ export class LocalQueueJobAdapter<T = any, R = any> extends BaseJobAdapter<T, R>
   }
 
   async remove(): Promise<void> {
-    this.jobData.state = 'completed';
+    if (this.queueAdapter) {
+      await this.queueAdapter.remove(this.jobData.id);
+    } else {
+      this.jobData.state = 'completed';
+    }
   }
 
   async retry(): Promise<void> {

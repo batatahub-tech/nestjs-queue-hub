@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events';
 import { JobOpts } from '../../interfaces/queue-hub-job-opts.interface';
 import { QueueHubFlowProducer } from '../../interfaces/queue-hub-flow-producer.interface';
 import { QueueHubJob } from '../../interfaces/queue-hub-job.interface';
@@ -56,14 +57,9 @@ export class LocalQueueFactory {
   }
 
   static createQueueEvents(_queue: QueueHubQueue): QueueHubQueueEvents {
-    return {
-      on: () => {},
-      once: () => {},
-      off: () => {},
-      removeListener: () => {},
-      removeAllListeners: () => {},
-      emit: () => false,
-    } as QueueHubQueueEvents;
+    const emitter = new EventEmitter() as QueueHubQueueEvents;
+    emitter.close = async () => {};
+    return emitter;
   }
 
   static createFlowProducer(_queues: Map<string, QueueHubQueue>): QueueHubFlowProducer {
@@ -71,7 +67,8 @@ export class LocalQueueFactory {
       add: async () => {
         throw new Error('FlowProducer not implemented for local driver');
       },
-    } as QueueHubFlowProducer;
+      close: async () => {},
+    };
   }
 }
 

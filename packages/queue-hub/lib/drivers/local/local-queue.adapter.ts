@@ -1,7 +1,7 @@
 import { JobOpts } from '../../interfaces/queue-hub-job-opts.interface';
 import { QueueHubJob } from '../../interfaces/queue-hub-job.interface';
 import { BaseQueueAdapter } from '../base/base-queue.adapter';
-import { LocalQueueJobAdapter } from './local-queue-job.adapter';
+import { LocalQueueJobAdapter, LocalJobData } from './local-queue-job.adapter';
 import { StoredJobOpts } from '../base/base-job.adapter';
 
 export class LocalQueueAdapter<T = any, R = any> extends BaseQueueAdapter<T, R> {
@@ -47,16 +47,17 @@ export class LocalQueueAdapter<T = any, R = any> extends BaseQueueAdapter<T, R> 
     const jobOpts = this.serializeJobOpts(name, mergedOpts, processAfter);
     const jobId = mergedOpts.jobId?.toString() || `local-${++this.jobIdCounter}-${Date.now()}`;
 
-    const jobData = {
+    const jobData: LocalJobData<T, R> = {
       id: jobId,
       name,
       data,
       jobOpts,
-      state: mergedOpts.delay && mergedOpts.delay > 0 ? 'delayed' : 'waiting' as const,
+      state: mergedOpts.delay && mergedOpts.delay > 0 ? 'delayed' : 'waiting',
       createdAt: Date.now(),
     };
 
     const job = new LocalQueueJobAdapter<T, R>(jobData);
+    job.setQueueAdapter(this);
     this.jobs.set(jobId, job);
 
     this.logger.debug(`Job added to local queue: ${name} (${jobId})`);
@@ -64,11 +65,19 @@ export class LocalQueueAdapter<T = any, R = any> extends BaseQueueAdapter<T, R> 
   }
 
   async getJob(jobId: string): Promise<QueueHubJob<T, R> | undefined> {
-    return this.jobs.get(jobId);
+    const job = this.jobs.get(jobId);
+    if (job) {
+      (job as any).setQueueAdapter?.(this);
+    }
+    return job;
   }
 
   async getJobs(_types?: string[], _start?: number, _end?: number): Promise<QueueHubJob<T, R>[]> {
-    return Array.from(this.jobs.values());
+    const jobs = Array.from(this.jobs.values());
+    jobs.forEach((job) => {
+      (job as any).setQueueAdapter?.(this);
+    });
+    return jobs;
   }
 
   async getWaiting(_start?: number, _end?: number): Promise<QueueHubJob<T, R>[]> {
