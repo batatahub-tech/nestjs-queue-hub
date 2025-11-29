@@ -20,7 +20,7 @@ export class OciQueueAdapter<T = any, R = any> extends BaseQueueAdapter<T, R> {
       channelId: 'default',
       _jobOpts: JSON.stringify({
         jobName: name,
-        priority: opts.priority ?? 0,
+        priority: opts.priority ?? Number.MAX_SAFE_INTEGER,
         attempts: opts.attempts,
         maxAttempts: opts.attempts,
         delay: opts.delay,

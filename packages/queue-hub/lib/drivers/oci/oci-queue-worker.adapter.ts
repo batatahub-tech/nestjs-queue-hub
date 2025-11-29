@@ -99,7 +99,7 @@ export class OciQueueWorkerAdapter extends BaseWorkerAdapter {
 
       try {
         this.logger.debug('Polling for messages...');
-        const jobs = await this.queue.getMessages();
+        const jobs = await this.queue.getWaiting();
 
         if (jobs.length > 0) {
           this.logger.info(`Found ${jobs.length} message(s) to process`);

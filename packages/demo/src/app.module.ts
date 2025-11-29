@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AudioModule } from './audio/audio.module';
+import { JobOptsDemoModule } from './job-opts-demo/job-opts-demo.module';
 import { NotificationModule } from './notification/notification.module';
 
 @Module({
@@ -18,19 +19,22 @@ import { NotificationModule } from './notification/notification.module';
         connection: {
           profile: configService.get<string>('OCI_CONFIG_PROFILE', 'DEFAULT'),
           compartmentId: configService.get<string>('OCI_COMPARTMENT_ID'),
-          // Or use tokenAuth instead of profile:
-          // tokenAuth: {
-          //   tenancyId: configService.get<string>('OCI_TENANCY_ID'),
-          //   userId: configService.get<string>('OCI_USER_ID'),
-          //   fingerprint: configService.get<string>('OCI_FINGERPRINT'),
-          //   privateKey: configService.get<string>('OCI_PRIVATE_KEY'),
-          // },
+        },
+        defaultJobOptions: {
+          attempts: 3,
+          backoff: {
+            type: 'exponential',
+            delay: 2000,
+          },
+          removeOnComplete: true,
+          removeOnFail: false,
         },
       }),
       inject: [ConfigService],
     }),
     AudioModule,
     NotificationModule,
+    JobOptsDemoModule,
   ],
   controllers: [AppController],
   providers: [AppService],
