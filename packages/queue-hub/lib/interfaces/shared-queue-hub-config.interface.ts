@@ -1,5 +1,7 @@
 import { FactoryProvider, ModuleMetadata, Provider, Type } from '@nestjs/common';
 import * as common from 'oci-common';
+import { AdvancedSettings } from './queue-hub-advanced-settings.interface';
+import { JobOpts } from './queue-hub-job-opts.interface';
 
 /**
  * @publicApi
@@ -74,6 +76,13 @@ export enum QueueHubLogLevel {
 }
 
 /**
+ * Connection options for queue configuration
+ * This is a generic type that can be extended by specific drivers
+ * @publicApi
+ */
+export type ConnectionOptions = OciQueueConnectionConfig;
+
+/**
  * @publicApi
  */
 export interface QueueHubRootModuleOptions {
@@ -82,7 +91,30 @@ export interface QueueHubRootModuleOptions {
    * @default QueueHubDriver.OCI_QUEUE
    */
   driver?: QueueHubDriver;
-  connection?: OciQueueConnectionConfig;
+  /**
+   * Options to configure the connection.
+   * See Connections for more information.
+   */
+  connection?: ConnectionOptions;
+  /**
+   * Prefix for all queue keys.
+   */
+  prefix?: string;
+  /**
+   * Options to control the default settings for new jobs.
+   * See JobOpts for more information.
+   */
+  defaultJobOptions?: JobOpts;
+  /**
+   * Advanced Queue configuration settings.
+   * These should usually not be changed.
+   * See AdvancedSettings for more information.
+   */
+  settings?: AdvancedSettings;
+  /**
+   * Extra options for module init.
+   * See Manual Registration
+   */
   extraOptions?: QueueHubModuleExtraOptions;
   /**
    * Log level for queue-hub operations

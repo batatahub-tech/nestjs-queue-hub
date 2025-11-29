@@ -1,5 +1,6 @@
 import * as common from 'oci-common';
 import { QueueClient } from 'oci-queue';
+import { JobOpts } from '../../interfaces/queue-hub-job-opts.interface';
 import { QueueHubFlowProducer } from '../../interfaces/queue-hub-flow-producer.interface';
 import { QueueHubJob } from '../../interfaces/queue-hub-job.interface';
 import { QueueHubQueueEvents } from '../../interfaces/queue-hub-queue-events.interface';
@@ -24,6 +25,7 @@ export interface OciQueueConfig {
   queueId: string;
   region?: string;
   endpoint?: string;
+  defaultJobOptions?: JobOpts;
 }
 
 export class OciQueueFactory {
@@ -67,7 +69,7 @@ export class OciQueueFactory {
 
     if (!OciQueueFactory.queues.has(key)) {
       const client = OciQueueFactory.createQueueClient(config);
-      const queue = new OciQueueAdapter(name, client, config.queueId);
+      const queue = new OciQueueAdapter(name, client, config.queueId, config.defaultJobOptions);
       OciQueueFactory.queues.set(key, queue);
     }
 

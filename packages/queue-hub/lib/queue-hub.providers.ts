@@ -127,6 +127,7 @@ function createQueueAndWorkers(
       region: options.region || rootConnection.region,
       compartmentId,
       provider,
+      defaultJobOptions: sharedConfig?.defaultJobOptions,
     };
 
     const queue = factory.createQueue(queueName, queueConfig);

@@ -1,4 +1,5 @@
 import { QueueClient, models } from 'oci-queue';
+import { JobOpts } from '../../interfaces/queue-hub-job-opts.interface';
 import { QueueHubJob } from '../../interfaces/queue-hub-job.interface';
 import { QueueHubQueue } from '../../interfaces/queue-hub-queue.interface';
 import { QueueHubLogger } from '../../utils/logger';
@@ -9,27 +10,63 @@ import { OciQueueJobAdapter } from './oci-queue-job.adapter';
  */
 export class OciQueueAdapter<T = any, R = any> implements QueueHubQueue<T, R> {
   private readonly logger: QueueHubLogger;
+  private readonly defaultJobOptions?: JobOpts;
 
   constructor(
     public readonly name: string,
     private readonly queueClient: QueueClient,
     private readonly queueId: string,
+    defaultJobOptions?: JobOpts,
   ) {
     this.logger = new QueueHubLogger(`OciQueueAdapter:${name}`);
+    this.defaultJobOptions = defaultJobOptions;
   }
 
-  async add(name: string, data: T, opts?: any): Promise<QueueHubJob<T, R>> {
+  async add(name: string, data: T, opts?: JobOpts): Promise<QueueHubJob<T, R>> {
+    // Merge default job options with provided options
+    const mergedOpts: JobOpts = {
+      ...this.defaultJobOptions,
+      ...opts,
+    };
+
     const contentString = JSON.stringify(data);
     const contentBase64 = Buffer.from(contentString).toString('base64');
+
+    const now = Date.now();
+    const delayMs = mergedOpts.delay || 0;
+    const processAfter = delayMs > 0 ? now + delayMs : now;
+
+    // Store all JobOpts in metadata for reference
+    // OCI Queue requires channelId in metadata
+    const metadata: any = {
+      channelId: 'default', // Required by OCI Queue MessageMetadata
+      // Store job options in metadata for worker to use
+      _jobOpts: JSON.stringify({
+        jobName: name,
+        priority: mergedOpts.priority ?? 0,
+        attempts: mergedOpts.attempts,
+        maxAttempts: mergedOpts.attempts,
+        delay: mergedOpts.delay,
+        processAfter, // Timestamp when job should be processed
+        timeout: mergedOpts.timeout,
+        jobId: mergedOpts.jobId,
+        removeOnComplete: mergedOpts.removeOnComplete,
+        removeOnFail: mergedOpts.removeOnFail,
+        lifo: mergedOpts.lifo,
+        stackTraceLimit: mergedOpts.stackTraceLimit,
+        repeat: mergedOpts.repeat,
+        backoff: mergedOpts.backoff,
+        createdAt: now,
+        // Preserve current attempt if this is a retry
+        currentAttempt: (mergedOpts as any)._currentAttempt || 1,
+      }),
+    };
 
     const putMessagesDetails: models.PutMessagesDetails = {
       messages: [
         {
           content: contentBase64,
-          metadata: {
-            ...opts,
-            jobName: name,
-          },
+          metadata,
         },
       ],
     };
@@ -39,18 +76,19 @@ export class OciQueueAdapter<T = any, R = any> implements QueueHubQueue<T, R> {
       putMessagesDetails,
     };
 
-    this.logger.debug(`Adding message to queue: ${name}`);
+    this.logger.debug(`Adding message to queue: ${name}${delayMs > 0 ? ` (delayed by ${delayMs}ms)` : ''}`);
     const response = await this.queueClient.putMessages(putMessagesRequest);
     this.logger.debug(`Message added successfully, opcRequestId: ${response.opcRequestId}`);
 
+    const messageId = mergedOpts.jobId?.toString() || response.opcRequestId || '';
     const message: any = {
-      id: response.opcRequestId || '',
+      id: messageId,
       receipt: response.opcRequestId || '',
       content: JSON.stringify(data),
       deliveryCount: 0,
-      visibleAfter: new Date(),
+      visibleAfter: new Date(processAfter),
       expireAfter: new Date(),
-      createdAt: new Date(),
+      createdAt: new Date(now),
     };
 
     return new OciQueueJobAdapter<T, R>(message, this.queueClient, this.queueId);

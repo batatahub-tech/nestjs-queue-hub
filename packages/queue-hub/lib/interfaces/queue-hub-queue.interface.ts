@@ -1,11 +1,12 @@
 import { QueueHubJob } from './queue-hub-job.interface';
+import { JobOpts } from './queue-hub-job-opts.interface';
 
 /**
  * @publicApi
  */
 export interface QueueHubQueue<T = any, R = any> {
   name: string;
-  add(name: string, data: T, opts?: any): Promise<QueueHubJob<T, R>>;
+  add(name: string, data: T, opts?: JobOpts): Promise<QueueHubJob<T, R>>;
   getJob(jobId: string): Promise<QueueHubJob<T, R> | undefined>;
   getJobs(types?: string[], start?: number, end?: number): Promise<QueueHubJob<T, R>[]>;
   getWaiting(start?: number, end?: number): Promise<QueueHubJob<T, R>[]>;

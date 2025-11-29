@@ -1,5 +1,7 @@
 export * from './queue-hub-processor.interfaces';
 export * from './queue-hub-job.interface';
+export * from './queue-hub-job-opts.interface';
+export * from './queue-hub-advanced-settings.interface';
 export * from './queue-hub-queue.interface';
 export * from './queue-hub-worker.interface';
 export * from './queue-hub-queue-events.interface';
