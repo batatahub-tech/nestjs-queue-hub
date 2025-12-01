@@ -1,7 +1,7 @@
 import {
   IConditionalDepHolder,
   createConditionalDepHolder,
-} from '@batatahub.com/nestjs-queue-hub-shared';
+} from './shared';
 import { DynamicModule, Module, Provider, Type } from '@nestjs/common';
 import { DiscoveryModule } from '@nestjs/core';
 import { ProcessorDecoratorService } from './instrument/processor-decorator.service';

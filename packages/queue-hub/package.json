@@ -19,7 +19,6 @@
     "test:e2e": "jest --config=e2e/jest-e2e.config.ts --detectOpenHandles --runInBand --forceExit --passWithNoTests"
   },
   "dependencies": {
-    "@batatahub.com/nestjs-queue-hub-shared": "^1.0.0",
     "tslib": "2.8.1"
   },
   "devDependencies": {

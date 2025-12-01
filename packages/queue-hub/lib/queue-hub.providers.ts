@@ -2,7 +2,7 @@ import {
   IConditionalDepHolder,
   createConditionalDepHolder,
   getQueueToken,
-} from '@batatahub.com/nestjs-queue-hub-shared';
+} from './shared';
 import { OnApplicationShutdown, Provider, flatten } from '@nestjs/common';
 import * as common from 'oci-common';
 import { QueueFactoryRegistry } from './drivers/queue-factory-registry';
@@ -12,6 +12,7 @@ import {
   QueueHubFlowProducer,
   QueueHubQueue,
   QueueHubRootModuleOptions,
+  QueueHubWorker,
 } from './interfaces';
 import { RegisterQueueOptions } from './interfaces/register-queue-options.interface';
 import { OciQueueConnectionConfig } from './interfaces/shared-queue-hub-config.interface';
@@ -23,6 +24,8 @@ import {
   getQueueOptionsToken,
   getSharedConfigToken,
 } from './utils';
+
+const trackedWorkers = new Map<string, QueueHubWorker[]>();
 
 /**
  * Custom authentication provider that fixes keyId format when session token exists
@@ -100,17 +103,25 @@ function createQueueAndWorkers(
     const queue = factory.createQueue(queueName, queueConfig);
 
     if (options.processors) {
+      const workers: QueueHubWorker[] = [];
       options.processors.forEach((processor: QueueHubQueueProcessor) => {
-        factory.createWorker(queueName, queue, processor, {
+        const worker = factory.createWorker(queueName, queue, processor, {
           concurrency: 1,
           pollingInterval: 1000,
         });
+        workers.push(worker);
       });
+      trackedWorkers.set(queueName, workers);
     }
 
     (queue as unknown as OnApplicationShutdown).onApplicationShutdown = async function (
       this: QueueHubQueue,
     ) {
+      const workers = trackedWorkers.get(queueName);
+      if (workers) {
+        await Promise.all(workers.map((worker) => worker.close().catch(() => {})));
+        trackedWorkers.delete(queueName);
+      }
       await this.close();
     };
 
@@ -159,17 +170,25 @@ function createQueueAndWorkers(
     const queue = factory.createQueue(queueName, queueConfig);
 
     if (options.processors) {
+      const workers: QueueHubWorker[] = [];
       options.processors.forEach((processor: QueueHubQueueProcessor) => {
-        factory.createWorker(queueName, queue, processor, {
+        const worker = factory.createWorker(queueName, queue, processor, {
           concurrency: 1,
           pollingInterval: 1000,
         });
+        workers.push(worker);
       });
+      trackedWorkers.set(queueName, workers);
     }
 
     (queue as unknown as OnApplicationShutdown).onApplicationShutdown = async function (
       this: QueueHubQueue,
     ) {
+      const workers = trackedWorkers.get(queueName);
+      if (workers) {
+        await Promise.all(workers.map((worker) => worker.close().catch(() => {})));
+        trackedWorkers.delete(queueName);
+      }
       await this.close();
     };
 

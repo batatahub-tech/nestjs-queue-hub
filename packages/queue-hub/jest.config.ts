@@ -7,9 +7,11 @@ const tsconfigSpecPath = join(process.cwd(), 'tsconfig.spec.json');
 const tsconfigSpec = JSON.parse(readFileSync(tsconfigSpecPath, 'utf-8'));
 const compilerOptions = tsconfigSpec.compilerOptions;
 
-const moduleNameMapper = pathsToModuleNameMapper(compilerOptions.paths, {
-  prefix: '<rootDir>/',
-});
+const moduleNameMapper = compilerOptions.paths
+  ? pathsToModuleNameMapper(compilerOptions.paths, {
+      prefix: '<rootDir>/',
+    })
+  : {};
 
 const config: Config.InitialOptions = {
   moduleFileExtensions: ['js', 'json', 'ts'],

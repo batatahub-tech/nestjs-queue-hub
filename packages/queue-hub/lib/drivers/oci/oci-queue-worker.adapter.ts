@@ -44,7 +44,7 @@ export class OciQueueWorkerAdapter extends BaseWorkerAdapter {
 
   protected async handleJobRetry(
     job: QueueHubJob,
-    error: Error,
+    _error: Error,
     currentAttempt: number,
     maxAttempts: number | undefined,
     backoff: number | any | undefined,
@@ -59,8 +59,6 @@ export class OciQueueWorkerAdapter extends BaseWorkerAdapter {
       `Scheduling retry for job ${job.id} (attempt ${nextAttempt}/${maxAttempts})${backoffDelay > 0 ? ` with backoff delay of ${backoffDelay}ms` : ''}`,
     );
 
-    await ociJob.remove();
-
     const retryOpts: any = {
       ...ociJob.opts,
       delay: backoffDelay,
@@ -69,8 +67,25 @@ export class OciQueueWorkerAdapter extends BaseWorkerAdapter {
 
     (retryOpts as any)._currentAttempt = nextAttempt;
 
-    await this.queue.add(ociJob.name, ociJob.data, retryOpts);
-    this.logger.debug(`Job ${ociJob.name} re-queued${backoffDelay > 0 ? ` with ${backoffDelay}ms delay` : ''} for retry (attempt ${nextAttempt})`);
+    try {
+      await this.queue.add(ociJob.name, ociJob.data, retryOpts);
+      this.logger.debug(`Job ${ociJob.name} re-queued${backoffDelay > 0 ? ` with ${backoffDelay}ms delay` : ''} for retry (attempt ${nextAttempt})`);
+    } catch (addError) {
+      this.logger.error(
+        `Failed to re-queue job ${ociJob.name} for retry. Original job will remain in queue.`,
+        addError,
+      );
+      throw addError;
+    }
+
+    try {
+      await ociJob.remove();
+    } catch (removeError) {
+      this.logger.error(
+        `Failed to remove original job ${ociJob.name} after successful retry queue addition. Both jobs may exist in queue.`,
+        removeError,
+      );
+    }
   }
 
   protected async handleJobCompletion(job: QueueHubJob, result: any): Promise<void> {

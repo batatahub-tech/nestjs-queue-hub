@@ -1,4 +1,4 @@
-export { getQueueToken, JOB_REF } from '@batatahub.com/nestjs-queue-hub-shared';
+export { getQueueToken, JOB_REF } from './shared';
 export * from './queue-hub.module';
 export * from './queue-hub.registrar';
 export * from './queue-hub.types';

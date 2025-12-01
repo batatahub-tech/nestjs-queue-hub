@@ -63,9 +63,34 @@ export abstract class BaseWorkerAdapter extends EventEmitter implements QueueHub
     return jobs.sort((a, b) => {
       const jobA = a as BaseJobAdapter;
       const jobB = b as BaseJobAdapter;
-      const priorityA = jobA.getJobOpts()?.priority ?? Number.MAX_SAFE_INTEGER;
-      const priorityB = jobB.getJobOpts()?.priority ?? Number.MAX_SAFE_INTEGER;
-      return priorityA - priorityB;
+      const optsA = jobA.getJobOpts();
+      const optsB = jobB.getJobOpts();
+      
+      const priorityA = optsA?.priority ?? Number.MAX_SAFE_INTEGER;
+      const priorityB = optsB?.priority ?? Number.MAX_SAFE_INTEGER;
+      
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+      
+      const lifoA = optsA?.lifo ?? false;
+      const lifoB = optsB?.lifo ?? false;
+      const createdAtA = optsA?.createdAt ?? 0;
+      const createdAtB = optsB?.createdAt ?? 0;
+      
+      if (lifoA && lifoB) {
+        return createdAtB - createdAtA;
+      }
+      
+      if (lifoA) {
+        return -1;
+      }
+      
+      if (lifoB) {
+        return 1;
+      }
+      
+      return createdAtA - createdAtB;
     });
   }
 

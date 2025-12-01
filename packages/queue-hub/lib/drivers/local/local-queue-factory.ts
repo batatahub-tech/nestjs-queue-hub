@@ -53,6 +53,13 @@ export class LocalQueueFactory {
     }
     LocalQueueFactory.workers.get(name)?.push(worker);
 
+    setTimeout(() => {
+      worker.start().catch((error) => {
+        console.error(`[LocalQueueFactory] Failed to start worker "${name}":`, error);
+        console.error('[LocalQueueFactory] Error stack:', error?.stack);
+      });
+    }, 100);
+
     return worker;
   }
 

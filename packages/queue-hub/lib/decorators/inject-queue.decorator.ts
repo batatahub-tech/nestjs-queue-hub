@@ -1,4 +1,4 @@
-import { getQueueToken } from '@batatahub.com/nestjs-queue-hub-shared';
+import { getQueueToken } from '../shared';
 import { Inject } from '@nestjs/common';
 
 /**

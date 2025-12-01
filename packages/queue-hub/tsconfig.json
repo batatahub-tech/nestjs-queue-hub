@@ -1,10 +1,7 @@
 {
   "extends": "../tsconfig.build.json",
   "compilerOptions": {
-    "types": ["node"],
-    "paths": {
-      "@batatahub.com/nestjs-queue-hub-shared": ["../queue-hub-shared/lib"]
-    }
+    "types": ["node"]
   },
   "files": [],
   "include": [],

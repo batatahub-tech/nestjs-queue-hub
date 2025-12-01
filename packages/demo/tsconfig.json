@@ -18,8 +18,7 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "paths": {
-      "@batatahub.com/nestjs-queue-hub": ["../queue-hub/dist"],
-      "@batatahub.com/nestjs-queue-hub-shared": ["../queue-hub-shared/dist"]
+      "@batatahub.com/nestjs-queue-hub": ["../queue-hub/dist"]
     }
   }
 }

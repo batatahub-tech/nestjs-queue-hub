@@ -5,3 +5,4 @@ export class MissingQueueHubSharedConfigurationError extends Error {
     );
   }
 }
+

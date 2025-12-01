@@ -1,4 +1,4 @@
-import { NO_QUEUE_FOUND, getQueueToken } from '@batatahub.com/nestjs-queue-hub-shared';
+import { NO_QUEUE_FOUND, NO_FLOW_PRODUCER_FOUND, getQueueToken } from './shared';
 import { Injectable, Logger, OnApplicationShutdown, Type } from '@nestjs/common';
 import { ContextIdFactory, DiscoveryService, MetadataScanner, ModuleRef } from '@nestjs/core';
 import { Injector } from '@nestjs/core/injector/injector';
@@ -23,7 +23,6 @@ import {
 import { NestQueueOptions } from './interfaces/queue-options.interface';
 import { NestWorkerOptions } from './interfaces/worker-options.interface';
 import { QueueHubMetadataAccessor } from './queue-hub-metadata.accessor';
-import { NO_FLOW_PRODUCER_FOUND } from './queue-hub.messages';
 import { QUEUE_HUB_CONFIG_DEFAULT_TOKEN, getSharedConfigToken } from './utils';
 
 @Injectable()
