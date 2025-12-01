@@ -108,12 +108,13 @@ export class OciQueueFactory {
 
     OciQueueFactory.logger.debug(`Worker "${name}" created for queue "${queue.name}"`);
 
-    setTimeout(() => {
+    // Start worker asynchronously without blocking
+    setImmediate(() => {
       worker.start().catch((error) => {
         console.error(`[OciQueueFactory] Failed to start worker "${name}":`, error);
         console.error('[OciQueueFactory] Error stack:', error?.stack);
       });
-    }, 100);
+    });
 
     return worker;
   }
@@ -129,4 +130,5 @@ export class OciQueueFactory {
     });
     return new OciQueueFlowProducerAdapter(ociQueues);
   }
+
 }

@@ -29,7 +29,10 @@ export class TestWorkerFactory {
 
   static async cleanupWorker(worker: QueueHubWorker): Promise<void> {
     try {
-      await worker.close(true);
+      if (worker && typeof worker.close === 'function') {
+        await worker.close(true);
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
     } catch (error) {
     }
   }

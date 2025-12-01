@@ -38,7 +38,9 @@ export class OciQueueEventsAdapter extends EventEmitter implements QueueHubQueue
   async close(): Promise<void> {
     if (this.pollingInterval) {
       clearInterval(this.pollingInterval);
+      this.pollingInterval = undefined;
     }
+    this.removeAllListeners();
     this.emit('closed');
   }
 }

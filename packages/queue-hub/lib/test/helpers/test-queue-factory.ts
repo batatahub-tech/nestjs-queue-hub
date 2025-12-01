@@ -43,8 +43,11 @@ export class TestQueueFactory {
 
   static async cleanupQueue(queue: QueueHubQueue): Promise<void> {
     try {
-      await queue.empty();
-      await queue.close();
+      if (queue && typeof queue.close === 'function') {
+        await queue.empty().catch(() => {});
+        await queue.close().catch(() => {});
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
     } catch (error) {
     }
   }

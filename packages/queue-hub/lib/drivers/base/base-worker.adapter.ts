@@ -49,14 +49,23 @@ export abstract class BaseWorkerAdapter extends EventEmitter implements QueueHub
       return this.processor(job);
     }
 
-    return Promise.race([
-      this.processor(job),
-      new Promise((_, reject) =>
-        setTimeout(() => {
-          reject(new Error(`Job ${job.id} timed out after ${timeout}ms`));
-        }, timeout),
-      ),
-    ]);
+    let timeoutId: NodeJS.Timeout;
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutId = setTimeout(() => {
+        reject(new Error(`Job ${job.id} timed out after ${timeout}ms`));
+      }, timeout);
+    });
+
+    try {
+      return await Promise.race([
+        this.processor(job),
+        timeoutPromise,
+      ]);
+    } finally {
+      if (timeoutId!) {
+        clearTimeout(timeoutId);
+      }
+    }
   }
 
   protected sortJobsByPriority(jobs: QueueHubJob[]): QueueHubJob[] {

@@ -53,19 +53,22 @@ export class LocalQueueFactory {
     }
     LocalQueueFactory.workers.get(name)?.push(worker);
 
-    setTimeout(() => {
+    // Start worker asynchronously without blocking
+    setImmediate(() => {
       worker.start().catch((error) => {
         console.error(`[LocalQueueFactory] Failed to start worker "${name}":`, error);
         console.error('[LocalQueueFactory] Error stack:', error?.stack);
       });
-    }, 100);
+    });
 
     return worker;
   }
 
   static createQueueEvents(_queue: QueueHubQueue): QueueHubQueueEvents {
     const emitter = new EventEmitter() as QueueHubQueueEvents;
-    emitter.close = async () => {};
+    emitter.close = async () => {
+      emitter.removeAllListeners();
+    };
     return emitter;
   }
 
@@ -77,5 +80,6 @@ export class LocalQueueFactory {
       close: async () => {},
     };
   }
+
 }
 

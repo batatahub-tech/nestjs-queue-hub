@@ -21,7 +21,9 @@ export class LocalQueueWorkerAdapter extends BaseWorkerAdapter {
     this._isRunning = false;
     if (this.pollingInterval) {
       clearInterval(this.pollingInterval);
+      this.pollingInterval = undefined;
     }
+    this.removeAllListeners();
     this.emit('closing');
     this.emit('closed');
   }
@@ -78,6 +80,11 @@ export class LocalQueueWorkerAdapter extends BaseWorkerAdapter {
     if (this._isRunning) {
       this.logger.warn('Worker already running, skipping start');
       return;
+    }
+
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = undefined;
     }
 
     this._isRunning = true;

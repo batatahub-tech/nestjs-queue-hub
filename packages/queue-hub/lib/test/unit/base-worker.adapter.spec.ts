@@ -176,6 +176,7 @@ describe('BaseWorkerAdapter', () => {
 
   afterEach(async () => {
     await worker.close();
+    worker.removeAllListeners();
   });
 
   describe('calculateBackoffDelay', () => {
@@ -225,9 +226,18 @@ describe('BaseWorkerAdapter', () => {
     });
 
     it('should timeout when processing takes too long', async () => {
-      processor.mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 10000)));
+      let timeoutId: NodeJS.Timeout;
+      processor.mockImplementation(() => new Promise((resolve) => {
+        timeoutId = setTimeout(resolve, 10000);
+      }));
       const job = {} as QueueHubJob;
-      await expect(worker['processJobWithTimeout'](job, 100)).rejects.toThrow('timed out');
+      try {
+        await expect(worker['processJobWithTimeout'](job, 100)).rejects.toThrow('timed out');
+      } finally {
+        if (timeoutId!) {
+          clearTimeout(timeoutId);
+        }
+      }
     });
   });
 
